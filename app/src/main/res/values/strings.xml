@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Run Fit</string>
+    <string name="empezar">Empezar</string>
+    <string name="tiempo">Tiempo:</string>
+    <string name="velocidad">Velocidad:</string>
+    <string name="distancia">Distancia:</string>
+    <string name="opciones">Opciones</string>
+    <string name="archivados">Archivados</string>
+    <string name="ruta">Ruta</string>
+</resources>

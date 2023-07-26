@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/rutasFragment">
+
+    <fragment
+        android:id="@+id/rutasFragment"
+        android:name="com.borja.android.runfit.RutasFragment"
+        android:label="fragment_rutas"
+        tools:layout="@layout/fragment_rutas" />
+
+    <fragment
+        android:id="@+id/sesionesGuardadasFragment"
+        android:name="com.borja.android.runfit.SesionesGuardadasFragment"
+        android:label="fragment_sesiones_guardadas"
+        tools:layout="@layout/fragment_sesiones_guardadas" />
+
+    <fragment
+        android:id="@+id/opcionesFragment"
+        android:name="com.borja.android.runfit.OpcionesFragment"
+        android:label="fragment_opciones"
+        tools:layout="@layout/fragment_opciones" />
+
+</navigation>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/rutasFragment"
+        android:icon="@drawable/ic_run"
+        android:title="@string/ruta"/>
+
+    <item
+        android:id="@+id/sesionesGuardadasFragment"
+        android:icon="@drawable/ic_archive"
+        android:title="@string/archivados"/>
+
+    <item
+        android:id="@+id/opcionesFragment"
+        android:icon="@drawable/ic_opciones"
+        android:title="@string/opciones"/>
+
+</menu>
