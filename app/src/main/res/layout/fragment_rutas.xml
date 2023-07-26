@@ -2,7 +2,8 @@
 
 <FrameLayout android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:android="http://schemas.android.com/apk/res/android" >
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <androidx.fragment.app.FragmentContainerView
         xmlns:tools="http://schemas.android.com/tools"
@@ -101,5 +102,16 @@
         android:translationZ="4dp"
         android:layout_marginBottom="32dp"
         />
+
+    <TextView
+        android:id="@+id/tvCountDown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textSize="272sp"
+        android:textColor="#000000"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="3"/>
 
 </FrameLayout>

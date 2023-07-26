@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.view.Gravity
 import androidx.core.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
@@ -58,6 +60,9 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
 
     private lateinit var locationUpdateServiceIntent: Intent
 
+    private lateinit var countDownTimer: CountDownTimer
+    private val COUNTDOWN_TIME = 3000L // 3 segundos
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -85,11 +90,11 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
         // Inicializar fusedLocationClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
-
         btnCalculate.setOnClickListener {
             if (isCalculatingRoute) {
                 stopCalculatingRoute()
             } else {
+                startCountDown()
                 startCalculatingRoute()
             }
         }
@@ -157,24 +162,54 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
     }
 
     private fun startCalculatingRoute() {
-        isCalculatingRoute = true
-        startTime = System.currentTimeMillis()
-        currentDistance = 0f
-        currentSpeed = 0.0
-        currentTimeInSeconds = 0
-        tvDistance.text = "Distancia: "
-        tvSpeed.text = "Velocidad: "
-        tvTime.text = "Tiempo: "
+        // Mostrar la cuenta atrás en un diálogo o en una vista personalizada
+        showCountDownDialog()
 
-        if (locationList.size >= 2) {
-            locationList.clear()
-            map.clear() //borrar ruta
+        countDownTimer = object : CountDownTimer(COUNTDOWN_TIME, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                // Actualizar la vista de cuenta atrás si es necesario
+                // Por ejemplo, puedes mostrar el tiempo restante en un TextView
+            }
+
+            override fun onFinish() {
+                // La cuenta atrás ha terminado, comienza a calcular la ruta
+                isCalculatingRoute = true
+                startTime = System.currentTimeMillis()
+                currentDistance = 0f
+                currentSpeed = 0.0
+                currentTimeInSeconds = 0
+                tvDistance.text = "Distancia: "
+                tvSpeed.text = "Velocidad: "
+                tvTime.text = "Tiempo: "
+                locationList.clear()
+                map.clear() //borrar ruta
+                btnCalculate.text = "Parar"
+                requestLocationUpdates()
+
+                // Iniciar el servicio en segundo plano
+                ContextCompat.startForegroundService(requireActivity(), locationUpdateServiceIntent)
+            }
         }
-        btnCalculate.text = "Parar"
-        requestLocationUpdates()
 
-        // Iniciar el servicio en segundo plano
-        ContextCompat.startForegroundService(requireActivity(), locationUpdateServiceIntent)
+        // Iniciar la cuenta atrás
+        countDownTimer.start()
+    }
+
+    private fun showCountDownDialog() {
+        val countDownToast = Toast.makeText(requireContext(), "", Toast.LENGTH_SHORT)
+        countDownToast.setGravity(Gravity.CENTER, 0, 0)
+        countDownTimer = object : CountDownTimer(COUNTDOWN_TIME, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                countDownToast.setText((millisUntilFinished / 1000).toString())
+                //countDownToast.show()
+            }
+
+            override fun onFinish() {
+                countDownToast.cancel()
+            }
+        }
+        // Iniciar la cuenta atrás
+        countDownTimer.start()
     }
 
     private fun stopCalculatingRoute() {
@@ -344,6 +379,23 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         }
+    }
+
+    private fun startCountDown() {
+        val countDownTextView = binding.tvCountDown
+        countDownTextView.visibility = View.VISIBLE
+
+        object : CountDownTimer(4000, 1000) { // 4 segundos en total, intervalo de 1 segundo
+            override fun onTick(millisUntilFinished: Long) {
+                val secondsLeft = millisUntilFinished / 1000
+                countDownTextView.text = secondsLeft.toString()
+            }
+
+            override fun onFinish() {
+                countDownTextView.visibility = View.GONE
+                startCalculatingRoute() // Iniciar el cálculo de la ruta
+            }
+        }.start()
     }
 }
 
