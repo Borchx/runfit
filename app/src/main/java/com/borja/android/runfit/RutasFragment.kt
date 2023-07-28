@@ -5,8 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
-import android.os.CountDownTimer
-import android.view.Gravity
 import androidx.core.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
@@ -28,8 +26,15 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.sql.Time
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.SimpleTimeZone
 
 class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListener {
     private var _binding: FragmentRutasBinding? = null
@@ -53,15 +58,18 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
     private lateinit var tvTime: TextView
     private lateinit var tvCalories: TextView
     private val caloriesPorMetro = 0.05
+    private var totalCaloriesBurned: Double = 0.0
+
+    private var isRouteStopped = false
+
+    private var formattedTime: String = ""
+
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 123
     }
 
     private lateinit var locationUpdateServiceIntent: Intent
-
-    private lateinit var countDownTimer: CountDownTimer
-    private val COUNTDOWN_TIME = 3000L // 3 segundos
 
 
     override fun onCreateView(
@@ -90,11 +98,11 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
         // Inicializar fusedLocationClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
+
         btnCalculate.setOnClickListener {
             if (isCalculatingRoute) {
                 stopCalculatingRoute()
             } else {
-                startCountDown()
                 startCalculatingRoute()
             }
         }
@@ -123,7 +131,7 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 super.onLocationResult(locationResult)
-                if (isCalculatingRoute) {
+                if (isCalculatingRoute && !isRouteStopped) {
                     val lastLocation = locationResult.lastLocation
                     val currentLatLng = LatLng(lastLocation!!.latitude, lastLocation!!.longitude)
 
@@ -150,9 +158,8 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
                         tvTime.text = formattedTime
 
                         // Calcular y mostrar las calorías aproximadas (ajusta la fórmula según tus necesidades)
-                        val caloriesPerMinute = 10 // Asumiendo que quema 10 calorías por minuto (ajusta según tus necesidades)
-                        val currentCalories = (caloriesPerMinute * timeInSeconds) / 60
-                        tvCalories.text = String.format("%d Calorías", currentCalories)
+                        val currentCalories = calculateCalories(currentSpeed, timeInSeconds)
+                        tvCalories.text = String.format("%.2f Calorías", currentCalories)
                     } else {
                         // Si no hay suficientes ubicaciones para calcular la distancia, puedes mostrar un mensaje o realizar alguna acción adecuada.
                     }
@@ -162,58 +169,34 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
     }
 
     private fun startCalculatingRoute() {
-        // Mostrar la cuenta atrás en un diálogo o en una vista personalizada
-        showCountDownDialog()
+        isCalculatingRoute = true
+        isRouteStopped = false
+        startTime = System.currentTimeMillis()
+        currentDistance = 0f
+        currentSpeed = 0.0
+        currentTimeInSeconds = 0
+        tvDistance.text = "Distancia: "
+        tvSpeed.text = "Velocidad: "
+        tvTime.text = "Tiempo: "
 
-        countDownTimer = object : CountDownTimer(COUNTDOWN_TIME, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                // Actualizar la vista de cuenta atrás si es necesario
-                // Por ejemplo, puedes mostrar el tiempo restante en un TextView
-            }
-
-            override fun onFinish() {
-                // La cuenta atrás ha terminado, comienza a calcular la ruta
-                isCalculatingRoute = true
-                startTime = System.currentTimeMillis()
-                currentDistance = 0f
-                currentSpeed = 0.0
-                currentTimeInSeconds = 0
-                tvDistance.text = "Distancia: "
-                tvSpeed.text = "Velocidad: "
-                tvTime.text = "Tiempo: "
-                locationList.clear()
-                map.clear() //borrar ruta
-                btnCalculate.text = "Parar"
-                requestLocationUpdates()
-
-                // Iniciar el servicio en segundo plano
-                ContextCompat.startForegroundService(requireActivity(), locationUpdateServiceIntent)
-            }
+        if (locationList.size >= 2) {
+            locationList.clear()
+            map.clear() //borrar ruta
         }
+        btnCalculate.text = "Parar"
+        requestLocationUpdates()
 
-        // Iniciar la cuenta atrás
-        countDownTimer.start()
-    }
+        // Iniciar el servicio en segundo plano
+        ContextCompat.startForegroundService(requireActivity(), locationUpdateServiceIntent)
 
-    private fun showCountDownDialog() {
-        val countDownToast = Toast.makeText(requireContext(), "", Toast.LENGTH_SHORT)
-        countDownToast.setGravity(Gravity.CENTER, 0, 0)
-        countDownTimer = object : CountDownTimer(COUNTDOWN_TIME, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                countDownToast.setText((millisUntilFinished / 1000).toString())
-                //countDownToast.show()
-            }
-
-            override fun onFinish() {
-                countDownToast.cancel()
-            }
-        }
-        // Iniciar la cuenta atrás
-        countDownTimer.start()
+        val currentDate = Date()
+        val timeFormat = SimpleDateFormat("HH:mm:ss")
+        formattedTime = timeFormat.format(currentDate)
     }
 
     private fun stopCalculatingRoute() {
         isCalculatingRoute = false
+        isRouteStopped = true
         fusedLocationClient.removeLocationUpdates(locationCallback)
         btnCalculate.text = "Empezar"
         if (locationList.isNotEmpty()) {
@@ -223,21 +206,71 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
         if (locationList.size >= 2) {
             val distance = calculateDistance()
             val timeInSeconds = (System.currentTimeMillis() - startTime) / 1000L // Convertir a Long
+            val timeInHours = timeInSeconds.toDouble() / 3600.0 // Convertir a horas
             val formattedTime = formatTime(timeInSeconds)
-            val speed =
-                distance / timeInSeconds.toDouble() * 3.6 // Convertir a Double para la división
-            val calories = calculateCalories(distance)
+            val speed = if (isRouteStopped) 0.0 else distance / timeInSeconds.toDouble() * 3.6
+
+
+            // Calcular las calorías quemadas en toda la ruta
+            totalCaloriesBurned = calculateCaloriesBurned(speed, 84.00,  timeInHours)
+
+            // Mostrar la información en la interfaz de usuario
             tvDistance.text = String.format("%.2f Metros", distance)
             tvSpeed.text = String.format("%.2f Km/h", speed)
             tvTime.text = "$formattedTime"
-            tvCalories.text = String.format("%.2f Calorías", calories)
+            tvCalories.text = String.format("%.2f Calorías", totalCaloriesBurned)
             tvCalories.visibility = View.VISIBLE
+
         }
+        // Obtener la fecha actual
+        val currentDate = Date()
+        val timeFormat = SimpleDateFormat("HH:mm:ss")
+        formattedTime = timeFormat.format(currentDate)
+
+        //DAO
+        var sesionRuta = SesionRuta(
+            distancia = currentDistance,
+            velocidadPromedio = currentSpeed,
+            tiempo = currentTimeInSeconds,
+            calorias = totalCaloriesBurned,
+            fecha = SimpleDateFormat("dd/MM/yyyy").format(currentDate),
+            hora = formattedTime
+        )
+
+        // DAO
+        val dao = AppDatabase.getInstance(requireContext()).sesionRutaDao()
+        CoroutineScope(Dispatchers.IO).launch {
+            val id = dao.insertSesionRuta(sesionRuta)
+            sesionRuta.id = id
+        }
+
         // Detener el servicio en segundo plano
         requireActivity().stopService(locationUpdateServiceIntent)
     }
-    private fun calculateCalories(distanceInMeters: Float): Double{
-        return distanceInMeters * caloriesPorMetro
+    private fun calculateCalories(speedKmPerHour: Double, timeInSeconds: Long): Double {
+        if (speedKmPerHour <= 0.0) {
+            // Si la velocidad es menor o igual a cero, devolver 0 calorías.
+            println("Velocidad cero. Calorías quemadas: 0.0") // Impresión de consola para verificar el caso de velocidad cero.
+            return 0.0
+        }
+
+        // Convertir velocidad de Km/h a m/s
+        val speedMetersPerSecond = speedKmPerHour * 1000 / 3600
+
+        // Calcular los equivalentes metabólicos (METs) basados en la velocidad
+        val mets = when {
+            speedMetersPerSecond < 2.5 -> 3.8 // Corriendo a velocidad moderada
+            speedMetersPerSecond < 3.5 -> 5.0 // Corriendo a velocidad rápida
+            else -> 9.8 // Corriendo a alta intensidad
+        }
+
+        // Calcular las calorías quemadas por minuto
+        val caloriesPerMinute = mets * 84.00 / 60
+
+        // Calcular las calorías quemadas en tiempo real
+        val currentCalories = caloriesPerMinute * timeInSeconds / 60
+
+        return currentCalories
     }
 
     private fun formatTime(timeInSeconds: Long): String {
@@ -250,9 +283,8 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
 
     private fun requestLocationUpdates() {
         val locationRequest = LocationRequest.create()
-        locationRequest.interval = 5000 // Intervalo de actualización de ubicación en milisegundos
-        locationRequest.fastestInterval =
-            2000 // Intervalo más rápido de actualización de ubicación en milisegundos
+        locationRequest.interval = 1000 // Intervalo de actualización de ubicación en milisegundos (1 segundo)
+        locationRequest.fastestInterval = 1000 // Intervalo más rápido de actualización de ubicación en milisegundos (1 segundo)
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
 
         if (ContextCompat.checkSelfPermission(
@@ -268,6 +300,28 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         }
+    }
+
+    private fun calculateCaloriesBurned(speedKmPerHour: Double, weightKg: Double, timeInHours: Double): Double {
+        if (speedKmPerHour <= 0.0) {
+            // Si la velocidad es menor o igual a cero, devolver 0 calorías.
+            return 0.0
+        }
+
+        // Convertir velocidad de Km/h a m/s
+        val speedMetersPerSecond = speedKmPerHour * 1000 / 3600
+
+        // Calcular los equivalentes metabólicos (METs) basados en la velocidad
+        val mets = when {
+            speedMetersPerSecond < 2.5 -> 3.8 // Corriendo a velocidad moderada
+            speedMetersPerSecond < 3.5 -> 5.0 // Corriendo a velocidad rápida
+            else -> 9.8 // Corriendo a alta intensidad
+        }
+
+        // Calcular las calorías quemadas
+        // La fórmula CNRC es: Calorías = METs * Peso (kg) * Tiempo (horas)
+        val caloriesBurned = mets * weightKg * timeInHours
+        return caloriesBurned
     }
 
     private fun enableMyLocation() {
@@ -380,28 +434,10 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
             )
         }
     }
-
-    private fun startCountDown() {
-        val countDownTextView = binding.tvCountDown
-        countDownTextView.visibility = View.VISIBLE
-
-        object : CountDownTimer(4000, 1000) { // 4 segundos en total, intervalo de 1 segundo
-            override fun onTick(millisUntilFinished: Long) {
-                val secondsLeft = millisUntilFinished / 1000
-                countDownTextView.text = secondsLeft.toString()
-            }
-
-            override fun onFinish() {
-                countDownTextView.visibility = View.GONE
-                startCalculatingRoute() // Iniciar el cálculo de la ruta
-            }
-        }.start()
-    }
-}
-
 private fun getRetrofit(): Retrofit {
     return Retrofit.Builder()
         .baseUrl("https://api.openrouteservice.org/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+}
 }

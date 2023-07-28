@@ -9,4 +9,10 @@
     <color name="blue">#003DF8</color>
     <color name="yellow">#FFE700</color>
     <color name="green">#0CBA00</color>
+
+
+    <color name="colorPrimary">#6200EE</color>
+    <color name="colorAccent">#002A57</color>
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorText">#212121</color>
 </resources>
