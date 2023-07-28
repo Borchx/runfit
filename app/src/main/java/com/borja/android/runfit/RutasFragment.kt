@@ -26,8 +26,15 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.sql.Time
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.SimpleTimeZone
 
 class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListener {
     private var _binding: FragmentRutasBinding? = null
@@ -54,6 +61,8 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
     private var totalCaloriesBurned: Double = 0.0
 
     private var isRouteStopped = false
+
+    private var formattedTime: String = ""
 
 
     companion object {
@@ -179,6 +188,10 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
 
         // Iniciar el servicio en segundo plano
         ContextCompat.startForegroundService(requireActivity(), locationUpdateServiceIntent)
+
+        val currentDate = Date()
+        val timeFormat = SimpleDateFormat("HH:mm:ss")
+        formattedTime = timeFormat.format(currentDate)
     }
 
     private fun stopCalculatingRoute() {
@@ -207,7 +220,30 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
             tvTime.text = "$formattedTime"
             tvCalories.text = String.format("%.2f Calorías", totalCaloriesBurned)
             tvCalories.visibility = View.VISIBLE
+
         }
+        // Obtener la fecha actual
+        val currentDate = Date()
+        val timeFormat = SimpleDateFormat("HH:mm:ss")
+        formattedTime = timeFormat.format(currentDate)
+
+        //DAO
+        var sesionRuta = SesionRuta(
+            distancia = currentDistance,
+            velocidadPromedio = currentSpeed,
+            tiempo = currentTimeInSeconds,
+            calorias = totalCaloriesBurned,
+            fecha = SimpleDateFormat("dd/MM/yyyy").format(currentDate),
+            hora = formattedTime
+        )
+
+        // DAO
+        val dao = AppDatabase.getInstance(requireContext()).sesionRutaDao()
+        CoroutineScope(Dispatchers.IO).launch {
+            val id = dao.insertSesionRuta(sesionRuta)
+            sesionRuta.id = id
+        }
+
         // Detener el servicio en segundo plano
         requireActivity().stopService(locationUpdateServiceIntent)
     }
@@ -398,11 +434,10 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
             )
         }
     }
-}
-
 private fun getRetrofit(): Retrofit {
     return Retrofit.Builder()
         .baseUrl("https://api.openrouteservice.org/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
+}
 }
