@@ -56,7 +56,7 @@ class LocationUpdateService : Service() {
 
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("RunFit")
-            .setContentText("Registrando ubicación en segundo plano...")
+            .setContentText("")
             .setSmallIcon(R.drawable.ic_run_fit_foreground)
             .setContentIntent(pendingIntent)
             .build()
