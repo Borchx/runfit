@@ -31,10 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.sql.Time
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.SimpleTimeZone
 
 class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListener {
     private var _binding: FragmentRutasBinding? = null
@@ -57,13 +55,11 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
     private lateinit var tvSpeed: TextView
     private lateinit var tvTime: TextView
     private lateinit var tvCalories: TextView
-    private val caloriesPorMetro = 0.05
     private var totalCaloriesBurned: Double = 0.0
 
     private var isRouteStopped = false
 
     private var formattedTime: String = ""
-
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 123
@@ -97,7 +93,6 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
 
         // Inicializar fusedLocationClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-
 
         btnCalculate.setOnClickListener {
             if (isCalculatingRoute) {
@@ -209,7 +204,6 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
             val timeInHours = timeInSeconds.toDouble() / 3600.0 // Convertir a horas
             val formattedTime = formatTime(timeInSeconds)
             val speed = if (isRouteStopped) 0.0 else distance / timeInSeconds.toDouble() * 3.6
-
 
             // Calcular las calorías quemadas en toda la ruta
             totalCaloriesBurned = calculateCaloriesBurned(speed, 84.00,  timeInHours)

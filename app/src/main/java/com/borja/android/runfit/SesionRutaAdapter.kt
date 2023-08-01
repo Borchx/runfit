@@ -36,7 +36,7 @@ class SesionRutaAdapter :
             tvId.text = "ID: ${sesionRuta.id}"
             tvFecha.text = "Fecha: ${sesionRuta.fecha} - Hora: ${sesionRuta.hora}"
             tvDistancia.text = "Distancia: ${sesionRuta.distancia} Metros"
-            tvVelocidad.text = "Velocidad: ${sesionRuta.velocidadPromedio} Km/h"
+            tvVelocidad.text = "Velocidad: ${formatSpeed(sesionRuta.velocidadPromedio)}\" Km/h"
             tvTiempo.text = "Tiempo: ${formatTime(sesionRuta.tiempo)}"
             tvCalorias.text = "Calorías: ${sesionRuta.calorias} Kcal"
         }
@@ -48,6 +48,11 @@ class SesionRutaAdapter :
 
             return String.format("%02dh : %02dm : %02ds", hours, minutes, seconds)
         }
+
+    private fun formatSpeed(speed: Double): String {
+        return String.format("%.2f", speed)
+    }
+
     }
 
     class SesionRutaDiffCallback : DiffUtil.ItemCallback<SesionRuta>() {
