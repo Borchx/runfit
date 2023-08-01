@@ -434,10 +434,10 @@ class RutasFragment : Fragment(), OnMapReadyCallback, GoogleMap.OnMapClickListen
             )
         }
     }
-private fun getRetrofit(): Retrofit {
-    return Retrofit.Builder()
-        .baseUrl("https://api.openrouteservice.org/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-}
+    private fun getRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.openrouteservice.org/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 }
