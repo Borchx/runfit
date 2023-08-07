@@ -3,20 +3,21 @@ package com.borja.android.runfit
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.SimpleDateFormat
+import com.borja.android.runfit.databinding.ItemSesionRutaBinding
 import java.util.concurrent.TimeUnit
 
-class SesionRutaAdapter :
+class SesionRutaAdapter(private val onDeleteClickListener: OnDeleteClickListener) :
     ListAdapter<SesionRuta, SesionRutaAdapter.SesionRutaViewHolder>(SesionRutaDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SesionRutaViewHolder {
         val view =
             LayoutInflater.from(parent.context).inflate(R.layout.item_sesion_ruta, parent, false)
-        return SesionRutaViewHolder(view)
+        return SesionRutaViewHolder(view, onDeleteClickListener)
     }
 
     override fun onBindViewHolder(holder: SesionRutaViewHolder, position: Int) {
@@ -24,7 +25,15 @@ class SesionRutaAdapter :
         holder.bind(sesionRuta)
     }
 
-    class SesionRutaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    interface OnDeleteClickListener {
+        fun onDeleteClick(sesionRuta: SesionRuta)
+    }
+
+    inner class SesionRutaViewHolder(
+        itemView: View,
+        private val onDeleteClickListener: OnDeleteClickListener
+    ) : RecyclerView.ViewHolder(itemView) {
+
         private val tvId: TextView = itemView.findViewById(R.id.tvId)
         private val tvFecha: TextView = itemView.findViewById(R.id.tvFecha)
         private val tvDistancia: TextView = itemView.findViewById(R.id.tvDistance)
@@ -49,10 +58,19 @@ class SesionRutaAdapter :
             return String.format("%02dh : %02dm : %02ds", hours, minutes, seconds)
         }
 
-    private fun formatSpeed(speed: Double): String {
-        return String.format("%.2f", speed)
-    }
+        private fun formatSpeed(speed: Double): String {
+            return String.format("%.2f", speed)
+        }
 
+        init {
+            itemView.findViewById<Button>(R.id.btnDelete)?.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val sesionRuta = getItem(position)
+                    onDeleteClickListener.onDeleteClick(sesionRuta)
+                }
+            }
+        }
     }
 
     class SesionRutaDiffCallback : DiffUtil.ItemCallback<SesionRuta>() {

@@ -4,13 +4,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <TextView
+        android:id="@+id/textViewTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sesiones Guardadas"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:textAlignment="center"
+        android:textColor="@color/colorText"
+        />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewSesiones"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp"
         android:clipToPadding="false"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="28dp"
         android:layout_marginBottom="8dp"
         android:visibility="visible"
         android:background="@android:color/transparent"
