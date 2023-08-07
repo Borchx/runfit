@@ -64,6 +64,13 @@
         android:textSize="14sp"
         android:textColor="@color/colorAccent"
         />
+    <Button
+        android:id="@+id/btnDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Eliminar"
+        android:backgroundTint="@color/colorAccent"
+        android:layout_gravity="center_horizontal"/>
 
 </LinearLayout>
 </androidx.cardview.widget.CardView>
